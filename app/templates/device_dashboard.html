@@ -415,7 +415,7 @@ var temp_display_format = "{{ temp_display_format }}";  // Used in formatTimeTex
 function formatTempText(temp) {
     // This takes the temperature that we are passed from DyGraph below and formats it in accordance with what we
     // would expect
-    return temp + " " + window.temp_format;
+    return temp.toFixed(2) + " " + window.temp_format;
 }
 
 function formatGravText(gravity) {
