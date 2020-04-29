@@ -1067,6 +1067,7 @@ class Beer(models.Model):
 
     # Version 1: Original version
     # Version 2: Adds 'state' to 'base_csv' for state plotting
+    # Version 3: Adds pressure logging
     model_version = models.IntegerField(default=2, help_text='Version # used for the logged file format')
 
     gravity_enabled = models.BooleanField(default=False, help_text='Is gravity logging enabled for this beer log?')
@@ -1088,10 +1089,10 @@ class Beer(models.Model):
             if human_readable:
                 # Currently unused
                 headers = ['log_time', 'beer_temp', 'beer_set', 'beer_ann', 'fridge_temp', 'fridge_set', 'fridge_ann',
-                           'room_temp', 'state', 'temp_format', 'associated_beer_id']
+                           'room_temp', 'state', 'temp_format', 'associated_beer_id', 'pressure']
             else:
                 headers = ['log_time', 'beer_temp', 'beer_set', 'beer_ann', 'fridge_temp', 'fridge_set', 'fridge_ann',
-                           'room_temp', 'state', 'temp_format', 'associated_beer_id']
+                           'room_temp', 'state', 'temp_format', 'associated_beer_id', 'pressure']
         else:
             return None
 
@@ -1110,6 +1111,13 @@ class Beer(models.Model):
                 headers.append('State')  # I don't think this gets used anywhere...
             else:
                 headers.append('state')
+
+        if which == 'base_csv' and self.model_version > 2:
+            # For model versions 3 and greater, we are appending "pressure" to the base CSV.
+            if human_readable:
+                headers.append('Pressure') 
+            else:
+                headers.append('pressure')
 
         return headers
 
@@ -1241,6 +1249,7 @@ class BeerLogPoint(models.Model):
     beer_temp = models.DecimalField(max_digits=13, decimal_places=10, null=True)
     beer_set = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     beer_ann = models.CharField(max_length=255, null=True)
+    beer_pressure = models.DecimalField(max_digits=13, decimal_places=10, null=True)
 
     fridge_temp = models.DecimalField(max_digits=13, decimal_places=10, null=True)
     fridge_set = models.DecimalField(max_digits=5, decimal_places=2, null=True)
@@ -1313,6 +1322,7 @@ class BeerLogPoint(models.Model):
             roomTemp = self.room_temp or 0
             beerSet = self.beer_set or 0
             fridgeSet = self.fridge_set or 0
+            beerPressure = self.beer_pressure or 0
             gravity_log = self.gravity or 0  # We'll set this just in case
             gravity_temp = self.gravity_temp or 0  # We'll set this just in case
         else:
@@ -1321,6 +1331,7 @@ class BeerLogPoint(models.Model):
             roomTemp = self.room_temp or None
             beerSet = self.beer_set or None
             fridgeSet = self.fridge_set or None
+            beerPressure = self.beer_pressure or None
             gravity_log = self.gravity or None  # We'll set this just in case
             gravity_temp = self.gravity_temp or None  # We'll set this just in case
 
@@ -1334,25 +1345,28 @@ class BeerLogPoint(models.Model):
 
         if data_format == 'base_csv':
             if not self.has_gravity_enabled():
-                if self.associated_beer.model_version > 1:
+                if self.associated_beer.model_version > 2:
+                    return [time_value, beerTemp, beerSet, fridgeTemp, fridgeSet, roomTemp, self.state, beerPressure]
+                elif self.associated_beer.model_version > 1:
                     return [time_value, beerTemp, beerSet, fridgeTemp, fridgeSet, roomTemp, self.state]
                 else:
                     return [time_value, beerTemp, beerSet, fridgeTemp, fridgeSet, roomTemp]
 
             else:
-                if self.associated_beer.model_version > 1:
-                    return [time_value, beerTemp, beerSet, fridgeTemp, fridgeSet, roomTemp, gravity_log, gravity_temp,
-                            self.state]
+                if self.associated_beer.model_version > 2:
+                    return [time_value, beerTemp, beerSet, fridgeTemp, fridgeSet, roomTemp, gravity_log, gravity_temp, self.state, beerPressure]
+                elif self.associated_beer.model_version > 1:
+                    return [time_value, beerTemp, beerSet, fridgeTemp, fridgeSet, roomTemp, gravity_log, gravity_temp, self.state]
                 else:
                     return [time_value, beerTemp, beerSet, fridgeTemp, fridgeSet, roomTemp, gravity_log, gravity_temp]
 
         elif data_format == 'full_csv':
             if not self.has_gravity_enabled():
                 return [time_value, beerTemp, beerSet, self.beer_ann, fridgeTemp, fridgeSet, self.fridge_ann,
-                        roomTemp, self.state, self.temp_format, self.associated_beer_id]
+                        roomTemp, self.state, self.temp_format, self.associated_beer_id, beerPressure]
             else:
                 return [time_value, beerTemp, beerSet, self.beer_ann, fridgeTemp, fridgeSet, self.fridge_ann,
-                        roomTemp, self.state, self.temp_format, self.associated_beer_id, gravity_log, gravity_temp]
+                        roomTemp, self.state, self.temp_format, self.associated_beer_id, gravity_log, gravity_temp, beerPressure]
 
         elif data_format == 'annotation_json':
             retval = []

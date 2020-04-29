@@ -397,7 +397,8 @@ prevTempJson = {
     "RoomTemp": None,
     "State": None,
     "BeerSet": 0,
-    "FridgeSet": 0}
+    "FridgeSet": 0,
+    "Pressure": 0}
 
 def renameTempKey(key):
     rename = {
@@ -410,7 +411,8 @@ def renameTempKey(key):
         "fa": "FridgeAnn",
         "rt": "RoomTemp",
         "s": "State",
-        "t": "Time"}
+        "t": "Time",
+        "p": "Pressure"}
     return rename.get(key, key)
 
 # At startup, if we're using a db-based config, force synchronization of temperature format
@@ -626,6 +628,7 @@ while run:
                         "FridgeAnn": prevTempJson['FridgeAnn'],
                         "RoomTemp": prevTempJson['RoomTemp'],
                         "State": prevTempJson['State'],
+                        "Pressure": prevTempJson['Pressure'],
                         "BeerSet": prevTempJson['BeerSet'],
                         "FridgeSet": prevTempJson['FridgeSet'],
                         "LogInterval": config['interval'],
