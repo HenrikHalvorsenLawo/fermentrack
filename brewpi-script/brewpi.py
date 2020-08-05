@@ -840,6 +840,8 @@ while run:
         logMessage("Socket error(%d): %s" % (e.errno, e.strerror))
         traceback.print_exc()
 
+    time.sleep(50)
+
 if bg_ser:
     bg_ser.stop()
 
